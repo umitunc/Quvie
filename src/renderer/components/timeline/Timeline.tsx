@@ -133,7 +133,7 @@ export const Timeline: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-full bg-[#13131a] rounded-lg border border-white/5 overflow-hidden">
+    <div className="flex flex-col h-full timeline-container overflow-hidden">
       {/* Timeline Controls */}
       <div className="flex justify-between items-center p-3 border-b border-white/5 bg-[#181824]/60 backdrop-blur-md">
         <div className="flex items-center gap-4">
@@ -175,14 +175,14 @@ export const Timeline: React.FC = () => {
       >
         {/* Playhead */}
         <div 
-          className="absolute top-0 bottom-0 w-0.5 bg-orange-500 z-30 pointer-events-none"
+          className="absolute top-0 bottom-0 w-0.5 bg-orange-500 z-30 pointer-events-none playhead-line"
           style={{ left: `${currentTime * scaleFactor + 16}px` }}
         >
           <div className="w-3 h-3 bg-orange-500 rounded-full -translate-x-[5px] shadow-[0_0_8px_rgba(249,115,22,0.6)]" />
         </div>
 
         {/* Video Track */}
-        <div className="flex items-center h-16 bg-white/[0.02] border border-white/5 rounded-lg mb-4 relative overflow-hidden">
+        <div className="flex items-center h-16 timeline-track mb-4 relative overflow-hidden">
           <div className="w-32 bg-[#1b1b28] h-full flex items-center gap-2 px-3 border-r border-white/5 flex-shrink-0 z-10">
             <Film size={14} className="text-orange-400" />
             <span className="text-xs font-semibold text-white">Video</span>
@@ -197,7 +197,7 @@ export const Timeline: React.FC = () => {
               </div>
             ) : (
               <div className="absolute inset-0 flex items-center justify-center text-xs text-gray-500">
-                Ana videoyu soldaki panelden yükleyin.
+                Ana videoyu buraya sürükleyip bırakın (.MP4, .MKV, .MOV, .AVI)
               </div>
             )}
           </div>
@@ -207,7 +207,7 @@ export const Timeline: React.FC = () => {
         <div 
           onDragOver={handleBlockDragOver}
           onDrop={handleBlockDrop}
-          className="flex items-center h-20 bg-white/[0.02] border border-white/5 rounded-lg relative overflow-hidden"
+          className="flex items-center h-20 timeline-track relative overflow-hidden"
         >
           <div className="w-32 bg-[#1b1b28] h-full flex items-center gap-2 px-3 border-r border-white/5 flex-shrink-0 z-10">
             <Music size={14} className="text-blue-400" />
@@ -223,10 +223,8 @@ export const Timeline: React.FC = () => {
                   e.stopPropagation()
                   setSelectedBlockId(block.id)
                 }}
-                className={`absolute top-2 bottom-2 rounded border p-2 flex flex-col justify-between cursor-grab active:cursor-grabbing select-none transition-shadow ${
-                  selectedBlockId === block.id 
-                    ? 'bg-blue-600/30 border-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.4)] text-blue-100' 
-                    : 'bg-white/5 border-white/10 text-white/90 hover:bg-white/10'
+                className={`absolute top-2 bottom-2 audio-block-ui p-2 flex flex-col justify-between cursor-grab active:cursor-grabbing select-none ${
+                  selectedBlockId === block.id ? 'selected' : ''
                 }`}
                 style={{ 
                   left: `${block.startTime * scaleFactor}px`,
@@ -253,7 +251,7 @@ export const Timeline: React.FC = () => {
             ))}
             {audioBlocks.length === 0 && (
               <div className="absolute inset-0 flex items-center justify-center text-xs text-gray-500">
-                Sürükle-bırak yöntemiyle buraya müzik/ses blokları yerleştirin.
+                Ses veya müzik dosyalarını buraya sürükleyip bırakın (.MP3, .WAV, .AAC, .M4A)
               </div>
             )}
           </div>
