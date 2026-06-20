@@ -74,15 +74,48 @@ export const Timeline: React.FC = () => {
   const handleBlockDrop = (e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    const rawData = e.dataTransfer.getData('application/quvie-block-drag')
-    if (!rawData) return
 
-    const data = JSON.parse(rawData)
-    const deltaX = e.clientX - data.startX
-    const deltaTime = deltaX / scaleFactor
-    const newStartTime = Math.max(0, data.originalStartTime + deltaTime)
+    // 1. Check if we dropped a file from project tree
+    const fileData = e.dataTransfer.getData('text/plain')
+    if (fileData) {
+      try {
+        const file = JSON.parse(fileData)
+        if (file && file.type === 'audio') {
+          if (!timelineRef.current) return
+          const rect = timelineRef.current.getBoundingClientRect()
+          const dropX = e.clientX - rect.left + timelineRef.current.scrollLeft
+          // Subtract the width of the label sidebar (128px)
+          const dropTime = Math.max(0, (dropX - 128) / scaleFactor)
 
-    updateAudioBlock(data.id, { startTime: newStartTime })
+          addAudioBlock({
+            name: file.name,
+            path: file.path,
+            startTime: dropTime,
+            duration: 30, // default duration
+            volume: 1.0,
+            pitch: 1.0,
+            tempo: 1.0
+          })
+          return
+        }
+      } catch (err) {
+        // Not a valid JSON or not a project tree file
+      }
+    }
+
+    // 2. Check if we are moving an existing block
+    const blockData = e.dataTransfer.getData('application/quvie-block-drag')
+    if (blockData) {
+      try {
+        const data = JSON.parse(blockData)
+        const deltaX = e.clientX - data.startX
+        const deltaTime = deltaX / scaleFactor
+        const newStartTime = Math.max(0, data.originalStartTime + deltaTime)
+        updateAudioBlock(data.id, { startTime: newStartTime })
+      } catch (err) {
+        console.error(err)
+      }
+    }
   }
 
   return (

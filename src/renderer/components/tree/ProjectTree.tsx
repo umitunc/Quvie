@@ -42,7 +42,7 @@ export const ProjectTree: React.FC = () => {
   }
 
   const handleDragStart = (e: React.DragEvent, file: ProjectFile) => {
-    e.dataTransfer.setData('application/quvie-file', JSON.stringify(file))
+    e.dataTransfer.setData('text/plain', JSON.stringify(file))
   }
 
   const handleAddToTimeline = (file: ProjectFile) => {
