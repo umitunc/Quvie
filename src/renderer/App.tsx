@@ -1,5 +1,4 @@
 import React from 'react'
-import { ProjectTree } from './components/tree/ProjectTree'
 import { Timeline } from './components/timeline/Timeline'
 import { PreviewPanel } from './components/preview/PreviewPanel'
 import { ModulationPanel } from './components/modulation/ModulationPanel'
@@ -32,13 +31,8 @@ const App: React.FC = () => {
       {/* Main Workspace Layout */}
       <main className="flex-1 grid grid-rows-[3fr_2fr] gap-4 overflow-hidden">
         {/* Top Control Panels */}
-        <div className="grid grid-cols-[260px_1fr_260px] gap-4 overflow-hidden">
-          {/* Left panel: File Assets Tree */}
-          <GlassCard className="flex flex-col overflow-hidden p-4">
-            <ProjectTree />
-          </GlassCard>
-
-          {/* Center panel: Previewer */}
+        <div className="grid grid-cols-[1fr_280px] gap-4 overflow-hidden">
+          {/* Left panel: Previewer */}
           <GlassCard className="flex flex-col justify-between overflow-hidden p-4">
             <PreviewPanel />
           </GlassCard>

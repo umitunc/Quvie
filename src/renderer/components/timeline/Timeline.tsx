@@ -15,7 +15,8 @@ export const Timeline: React.FC = () => {
     removeAudioBlock,
     setSelectedBlockId,
     setCurrentTime,
-    setScaleFactor
+    setScaleFactor,
+    setVideo
   } = useProjectStore()
 
   const timelineRef = useRef<HTMLDivElement>(null)
@@ -25,31 +26,40 @@ export const Timeline: React.FC = () => {
     e.preventDefault()
   }
 
-  // Handle Drop onto audio track
+  // Handle Drop onto container (Main Timeline Area)
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     if (!timelineRef.current) return
 
-    const rawData = e.dataTransfer.getData('application/quvie-file')
-    if (!rawData) return
+    // Check if we dropped external files from OS
+    const files = Array.from(e.dataTransfer.files)
+    if (files.length > 0) {
+      const rect = timelineRef.current.getBoundingClientRect()
+      const dropX = e.clientX - rect.left + timelineRef.current.scrollLeft
+      const dropTime = Math.max(0, (dropX - 128) / scaleFactor)
 
-    const file = JSON.parse(rawData)
-    if (file.type !== 'audio') return
+      files.forEach((file: any) => {
+        const filePath = file.path
+        if (!filePath) return
+        const ext = filePath.split('.').pop()?.toLowerCase() || ''
+        const name = file.name
 
-    // Calculate start time based on drop position relative to timeline container
-    const rect = timelineRef.current.getBoundingClientRect()
-    const dropX = e.clientX - rect.left + timelineRef.current.scrollLeft
-    const dropTime = Math.max(0, dropX / scaleFactor)
-
-    addAudioBlock({
-      name: file.name,
-      path: file.path,
-      startTime: dropTime,
-      duration: 30, // default duration
-      volume: 1.0,
-      pitch: 1.0,
-      tempo: 1.0
-    })
+        if (['mp4', 'mkv', 'mov', 'avi'].includes(ext)) {
+          setVideo(filePath, 120)
+        } else if (['mp3', 'wav', 'aac', 'm4a'].includes(ext)) {
+          addAudioBlock({
+            name,
+            path: filePath,
+            startTime: dropTime,
+            duration: 30,
+            volume: 1.0,
+            pitch: 1.0,
+            tempo: 1.0
+          })
+        }
+      })
+      return
+    }
   }
 
   // Handle click on timeline to set playhead
@@ -71,39 +81,43 @@ export const Timeline: React.FC = () => {
     e.preventDefault()
   }
 
+  // Handle drops onto Audio Track directly
   const handleBlockDrop = (e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
 
-    // 1. Check if we dropped a file from project tree
-    const fileData = e.dataTransfer.getData('text/plain')
-    if (fileData) {
-      try {
-        const file = JSON.parse(fileData)
-        if (file && file.type === 'audio') {
-          if (!timelineRef.current) return
-          const rect = timelineRef.current.getBoundingClientRect()
-          const dropX = e.clientX - rect.left + timelineRef.current.scrollLeft
-          // Subtract the width of the label sidebar (128px)
-          const dropTime = Math.max(0, (dropX - 128) / scaleFactor)
+    // 0. Check if we dropped external files from OS
+    const files = Array.from(e.dataTransfer.files)
+    if (files.length > 0) {
+      if (!timelineRef.current) return
+      const rect = timelineRef.current.getBoundingClientRect()
+      const dropX = e.clientX - rect.left + timelineRef.current.scrollLeft
+      const dropTime = Math.max(0, (dropX - 128) / scaleFactor)
 
+      files.forEach((file: any) => {
+        const filePath = file.path
+        if (!filePath) return
+        const ext = filePath.split('.').pop()?.toLowerCase() || ''
+        const name = file.name
+
+        if (['mp4', 'mkv', 'mov', 'avi'].includes(ext)) {
+          setVideo(filePath, 120)
+        } else if (['mp3', 'wav', 'aac', 'm4a'].includes(ext)) {
           addAudioBlock({
-            name: file.name,
-            path: file.path,
+            name,
+            path: filePath,
             startTime: dropTime,
-            duration: 30, // default duration
+            duration: 30,
             volume: 1.0,
             pitch: 1.0,
             tempo: 1.0
           })
-          return
         }
-      } catch (err) {
-        // Not a valid JSON or not a project tree file
-      }
+      })
+      return
     }
 
-    // 2. Check if we are moving an existing block
+    // 1. Check if we are moving an existing block
     const blockData = e.dataTransfer.getData('application/quvie-block-drag')
     if (blockData) {
       try {
