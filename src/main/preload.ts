@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 
 contextBridge.exposeInMainWorld('electronAPI', {
   selectFiles: (type: 'all' | 'video' | 'audio' | 'image') => ipcRenderer.invoke('select-files', type),
+  probeFile: (filePath: string) => ipcRenderer.invoke('probe-file', filePath),
   exportProject: (projectData: any) => ipcRenderer.invoke('export-project', projectData),
   onExportProgress: (callback: (progress: number) => void) => {
     const listener = (_event: any, value: number) => callback(value)
@@ -9,3 +10,4 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return () => ipcRenderer.removeListener('export-progress', listener)
   }
 })
+

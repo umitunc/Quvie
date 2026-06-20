@@ -1,97 +1,110 @@
 import { create } from 'zustand'
 
-export interface AudioBlock {
+export interface VisualItem {
   id: string
   name: string
   path: string
-  startTime: number // in seconds
-  duration: number // in seconds
-  volume: number // 0.0 - 1.0
-  pitch: number // 0.5 - 2.0
-  tempo: number // 0.5 - 2.0
+  type: 'video' | 'image'
+  duration: number // 5s for image, actual duration for video
 }
 
-export interface ProjectFile {
+export interface AudioItem {
   id: string
   name: string
   path: string
-  type: 'video' | 'audio' | 'image'
+  startTime: number
+  duration: number
+  volume: number
 }
 
 interface ProjectState {
-  videoPath: string | null
-  videoDuration: number
-  audioBlocks: AudioBlock[]
-  projectTreeFiles: ProjectFile[]
-  scaleFactor: number
+  visualItems: VisualItem[]
+  audioItems: AudioItem[]
   currentTime: number
   isPlaying: boolean
-  selectedBlockId: string | null
-  
+  scaleFactor: number
+  selectedItemId: string | null
+  selectedItemType: 'visual' | 'audio' | null
+  isExporting: boolean
+  exportProgress: number
+
   // Actions
-  setVideo: (path: string, duration: number) => void
-  removeVideo: () => void
-  addAudioBlock: (block: Omit<AudioBlock, 'id'>) => void
-  updateAudioBlock: (id: string, updates: Partial<Omit<AudioBlock, 'id'>>) => void
-  removeAudioBlock: (id: string) => void
-  addProjectFile: (file: Omit<ProjectFile, 'id'>) => void
-  removeProjectFile: (id: string) => void
-  setScaleFactor: (scale: number) => void
+  addVisualItem: (item: Omit<VisualItem, 'id'>) => void
+  removeVisualItem: (id: string) => void
+  reorderVisualItems: (startIndex: number, endIndex: number) => void
+  addAudioItem: (item: Omit<AudioItem, 'id'>) => void
+  updateAudioItem: (id: string, updates: Partial<Omit<AudioItem, 'id'>>) => void
+  removeAudioItem: (id: string) => void
+  
   setCurrentTime: (time: number) => void
   setIsPlaying: (playing: boolean) => void
-  setSelectedBlockId: (id: string | null) => void
+  setScaleFactor: (scale: number) => void
+  setSelectedItem: (id: string | null, type: 'visual' | 'audio' | null) => void
+  
+  setExportState: (isExporting: boolean, progress: number) => void
+  resetProject: () => void
 }
 
 export const useProjectStore = create<ProjectState>((set) => ({
-  videoPath: null,
-  videoDuration: 0,
-  audioBlocks: [],
-  projectTreeFiles: [],
-  scaleFactor: 40,
+  visualItems: [],
+  audioItems: [],
   currentTime: 0,
   isPlaying: false,
-  selectedBlockId: null,
+  scaleFactor: 40,
+  selectedItemId: null,
+  selectedItemType: null,
+  isExporting: false,
+  exportProgress: 0,
 
-  setVideo: (path, duration) => set({ 
-    videoPath: path, 
-    videoDuration: duration 
-  }),
-  
-  removeVideo: () => set({ 
-    videoPath: null, 
-    videoDuration: 0 
-  }),
-
-  addAudioBlock: (block) => set((state) => ({
-    audioBlocks: [...state.audioBlocks, { ...block, id: Math.random().toString(36).substring(7) }]
+  addVisualItem: (item) => set((state) => ({
+    visualItems: [...state.visualItems, { ...item, id: Math.random().toString(36).substring(7) }]
   })),
 
-  updateAudioBlock: (id, updates) => set((state) => ({
-    audioBlocks: state.audioBlocks.map((b) => b.id === id ? { ...b, ...updates } : b)
+  removeVisualItem: (id) => set((state) => ({
+    visualItems: state.visualItems.filter((item) => item.id !== id),
+    selectedItemId: state.selectedItemId === id ? null : state.selectedItemId,
+    selectedItemType: state.selectedItemId === id ? null : state.selectedItemType
   })),
 
-  removeAudioBlock: (id) => set((state) => ({
-    audioBlocks: state.audioBlocks.filter((b) => b.id !== id),
-    selectedBlockId: state.selectedBlockId === id ? null : state.selectedBlockId
-  })),
-
-  addProjectFile: (file) => set((state) => {
-    // Avoid duplicates
-    if (state.projectTreeFiles.some(f => f.path === file.path)) return {}
-    return {
-      projectTreeFiles: [...state.projectTreeFiles, { ...file, id: Math.random().toString(36).substring(7) }]
-    }
+  reorderVisualItems: (startIndex, endIndex) => set((state) => {
+    const result = Array.from(state.visualItems)
+    const [removed] = result.splice(startIndex, 1)
+    result.splice(endIndex, 0, removed)
+    return { visualItems: result }
   }),
 
-  removeProjectFile: (id) => set((state) => ({
-    projectTreeFiles: state.projectTreeFiles.filter((f) => f.id !== id)
+  addAudioItem: (item) => set((state) => ({
+    audioItems: [...state.audioItems, { ...item, id: Math.random().toString(36).substring(7) }]
   })),
 
-  setScaleFactor: (scale) => set({ scaleFactor: Math.max(10, Math.min(200, scale)) }),
-  
-  setCurrentTime: (time) => set({ currentTime: time }),
+  updateAudioItem: (id, updates) => set((state) => ({
+    audioItems: state.audioItems.map((item) => item.id === id ? { ...item, ...updates } : item)
+  })),
+
+  removeAudioItem: (id) => set((state) => ({
+    audioItems: state.audioItems.filter((item) => item.id !== id),
+    selectedItemId: state.selectedItemId === id ? null : state.selectedItemId,
+    selectedItemType: state.selectedItemId === id ? null : state.selectedItemType
+  })),
+
+  setCurrentTime: (time) => set({ currentTime: Math.max(0, time) }),
   
   setIsPlaying: (playing) => set({ isPlaying: playing }),
   
-  setSelectedBlockId: (id) => set({ selectedBlockId: id })
+  setScaleFactor: (scale) => set({ scaleFactor: Math.max(10, Math.min(200, scale)) }),
+  
+  setSelectedItem: (id, type) => set({ selectedItemId: id, selectedItemType: type }),
+
+  setExportState: (isExporting, progress) => set({ isExporting, exportProgress: progress }),
+
+  resetProject: () => set({
+    visualItems: [],
+    audioItems: [],
+    currentTime: 0,
+    isPlaying: false,
+    selectedItemId: null,
+    selectedItemType: null,
+    isExporting: false,
+    exportProgress: 0
+  })
 }))

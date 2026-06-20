@@ -52,9 +52,33 @@ app.whenReady().then(() => {
   })
 })
 
+import { execFile } from 'child_process'
+
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
 })
+
+// Helper to probe file duration using ffmpeg -i
+function getFileDuration(filePath: string): Promise<number> {
+  return new Promise((resolve) => {
+    if (!ffmpegPath) {
+      resolve(0)
+      return
+    }
+    execFile(ffmpegPath, ['-i', filePath], (_error, stdout, stderr) => {
+      const output = stderr || stdout
+      const match = output.match(/Duration:\s*(\d+):(\d+):(\d+\.\d+)/)
+      if (match) {
+        const hours = parseInt(match[1], 10)
+        const minutes = parseInt(match[2], 10)
+        const seconds = parseFloat(match[3])
+        resolve(hours * 3600 + minutes * 60 + seconds)
+      } else {
+        resolve(0)
+      }
+    })
+  })
+}
 
 // IPC File Open Handlers
 ipcMain.handle('select-files', async (_, type: 'all' | 'video' | 'audio' | 'image') => {
@@ -83,8 +107,14 @@ ipcMain.handle('select-files', async (_, type: 'all' | 'video' | 'audio' | 'imag
   return result.filePaths
 })
 
+ipcMain.handle('probe-file', async (_, filePath: string) => {
+  const duration = await getFileDuration(filePath)
+  return { duration }
+})
+
 ipcMain.handle('export-project', async (event, projectData: any) => {
   return await FfmpegService.exportProject(projectData, (progress) => {
     event.sender.send('export-progress', progress)
   })
 })
+
